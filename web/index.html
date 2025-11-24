@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Exchanger Web - Обмен файлами онлайн</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .button-group {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .room-info {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .room-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .room-id {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ecff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-item:hover {
+            background: #f0f2ff;
+            transform: translateX(5px);
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-download:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #ee5a52;
+            transform: scale(1.05);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 350px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success { border-left: 4px solid #51cf66; }
+        .notification.error { border-left: 4px solid #ff6b6b; }
+        .notification.info { border-left: 4px solid #667eea; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-btn {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        .hint {
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 File Exchanger</h1>
+            <p>Безопасный обмен файлами онлайн</p>
+        </div>
+
+        <div class="content">
+            <!-- Экран выбора действия -->
+            <div id="homeScreen" class="screen active">
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="showScreen('createScreen')">
+                        ➕ Создать сервер
+                    </button>
+                    <button class="btn btn-secondary" onclick="showScreen('joinScreen')">
+                        🔗 Подключиться к серверу
+                    </button>
+                </div>
+                <p class="hint">Создайте свой сервер или подключитесь к существующему</p>
+            </div>
+
+            <!-- Экран создания сервера -->
+            <div id="createScreen" class="screen">
+                <a class="back-btn" onclick="showScreen('homeScreen')">← Назад</a>
+                <h2 style="margin-bottom: 20px;">Создать сервер</h2>
+                
+                <div class="form-group">
+                    <label>Придумайте пароль</label>
+                    <input type="password" id="createPassword" placeholder="Минимум 4 символа" minlength="4">
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%;" onclick="createRoom()">
+                    Создать
+                </button>
+                
+                <p class="hint">Вам будет выдан уникальный ID для подключения</p>
+            </div>
+
+            <!-- Экран подключения к серверу -->
+            <div id="joinScreen" class="screen">
+                <a class="back-btn" onclick="showScreen('homeScreen')">← Назад</a>
+                <h2 style="margin-bottom: 20px;">Подключиться к серверу</h2>
+                
+                <div class="form-group">
+                    <label>ID сервера</label>
+                    <input type="text" id="joinRoomId" placeholder="Например: A1B2C3" maxlength="6" style="text-transform: uppercase;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="joinPassword" placeholder="Введите пароль">
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%;" onclick="joinRoom()">
+                    Подключиться
+                </button>
+            </div>
+
+            <!-- Экран комнаты (обмен файлами) -->
+            <div id="roomScreen" class="screen">
+                <a class="back-btn" onclick="leaveRoom()">← Выйти из комнаты</a>
+                
+                <div class="room-info">
+                    <h3>ID вашего сервера:</h3>
+                    <div class="room-id" id="roomIdDisplay">------</div>
+                    <p style="text-align: center; color: #666; font-size: 0.9em;">
+                        Поделитесь этим ID для подключения
+                    </p>
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p>Перетащите файл сюда</p>
+                    <p style="font-size: 0.9em; color: #999;">или нажмите для выбора</p>
+                </div>
+                <input type="file" id="fileInput" multiple>
+
+                <h3 style="margin-bottom: 15px;">Файлы на сервере:</h3>
+                <div class="file-list" id="fileList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Загрузка файлов...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRoom = null;
+        let currentPassword = null;
+        let refreshInterval = null;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        async function createRoom() {
+            const password = document.getElementById('createPassword').value;
+            
+            if (!password || password.length < 4) {
+                showNotification('❌ Пароль должен быть минимум 4 символа', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/create-room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentRoom = data.room_id;
+                    currentPassword = password;
+                    document.getElementById('roomIdDisplay').textContent = data.room_id;
+                    showScreen('roomScreen');
+                    showNotification(`✓ Сервер создан! ID: ${data.room_id}`, 'success');
+                    loadFiles();
+                    startAutoRefresh();
+                } else {
+                    showNotification('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Ошибка соединения', 'error');
+            }
+        }
+
+        async function joinRoom() {
+            const roomId = document.getElementById('joinRoomId').value.toUpperCase().trim();
+            const password = document.getElementById('joinPassword').value;
+
+            if (!roomId) {
+                showNotification('❌ Введите ID сервера', 'error');
+                return;
+            }
+
+            if (!password) {
+                showNotification('❌ Введите пароль', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/join-room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentRoom = data.room_id;
+                    currentPassword = password;
+                    document.getElementById('roomIdDisplay').textContent = data.room_id;
+                    showScreen('roomScreen');
+                    showNotification('✓ Успешное подключение!', 'success');
+                    loadFiles();
+                    startAutoRefresh();
+                } else {
+                    showNotification('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Ошибка соединения', 'error');
+            }
+        }
+
+        function leaveRoom() {
+            currentRoom = null;
+            currentPassword = null;
+            stopAutoRefresh();
+            showScreen('homeScreen');
+            document.getElementById('createPassword').value = '';
+            document.getElementById('joinRoomId').value = '';
+            document.getElementById('joinPassword').value = '';
+        }
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            for (let file of files) {
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            if (!currentRoom || !currentPassword) return;
+
+            try {
+                const response = await fetch(`/api/room/${currentRoom}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Filename': file.name,
+                        'X-Password': currentPassword
+                    },
+                    body: file
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`✓ Файл "${file.name}" загружен`, 'success');
+                    loadFiles();
+                } else {
+                    showNotification(`❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ Ошибка загрузки "${file.name}"`, 'error');
+            }
+        }
+
+        async function loadFiles() {
+            if (!currentRoom || !currentPassword) return;
+
+            try {
+                const response = await fetch(`/api/room/${currentRoom}/files`, {
+                    headers: { 'X-Password': currentPassword }
+                });
+
+                const files = await response.json();
+
+                const fileList = document.getElementById('fileList');
+
+                if (files.error) {
+                    fileList.innerHTML = `<div class="empty-state">❌ ${files.error}</div>`;
+                    return;
+                }
+
+                if (files.length === 0) {
+                    fileList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>Файлов нет</p>
+                            <p style="font-size: 0.9em; margin-top: 5px;">Загрузите первый файл</p>
+                        </div>
+                    `;
+                } else {
+                    fileList.innerHTML = files.map(file => `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-name">📄 ${escapeHtml(file.name)}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                            <div class="file-actions">
+                                <button class="btn-small btn-download" onclick="downloadFile('${escapeHtml(file.name)}')">
+                                    📥 Скачать
+                                </button>
+                                <button class="btn-small btn-delete" onclick="deleteFile('${escapeHtml(file.name)}')">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('fileList').innerHTML = `
+                    <div class="empty-state">⚠️ Ошибка загрузки файлов</div>
+                `;
+            }
+        }
+
+        function downloadFile(filename) {
+            if (!currentRoom || !currentPassword) return;
+
+            const a = document.createElement('a');
+            a.href = `/api/room/${currentRoom}/download/${encodeURIComponent(filename)}`;
+            a.download = filename;
+            
+            // Add password header (workaround: use fetch to get the file with headers)
+            fetch(`/api/room/${currentRoom}/download/${encodeURIComponent(filename)}`, {
+                headers: { 'X-Password': currentPassword }
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                showNotification(`📥 Загрузка "${filename}"`, 'info');
+            })
+            .catch(() => {
+                showNotification('❌ Ошибка при скачивании', 'error');
+            });
+        }
+
+        async function deleteFile(filename) {
+            if (!currentRoom || !currentPassword) return;
+            
+            if (!confirm(`Удалить "${filename}"?`)) return;
+
+            try {
+                const response = await fetch(`/api/room/${currentRoom}/delete/${encodeURIComponent(filename)}`, {
+                    method: 'DELETE',
+                    headers: { 'X-Password': currentPassword }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`✓ Файл "${filename}" удален`, 'success');
+                    loadFiles();
+                } else {
+                    showNotification(`❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Ошибка при удалении', 'error');
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            refreshInterval = setInterval(() => {
+                if (currentRoom) loadFiles();
+            }, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+    </script>
+</body>
+</html>
