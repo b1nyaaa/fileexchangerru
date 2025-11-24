@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Exchanger - Обмен файлами</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ecff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .upload-area .hint {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .file-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .file-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .file-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-item:hover {
+            background: #f0f2ff;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-download:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #ee5a52;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-delete:active {
+            transform: scale(0.95);
+        }
+
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            border-left: 4px solid #51cf66;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .notification.info {
+            border-left: 4px solid #667eea;
+        }
+
+        .server-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .server-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .server-info p {
+            color: #666;
+            font-size: 0.85em;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #51cf66;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .error-state {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 File Exchanger</h1>
+            <p>Удобный обмен файлами между компьютерами</p>
+        </div>
+
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="section">
+                <h2>Загрузить файл</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p>Перетащите файл сюда</p>
+                    <p class="hint">или нажмите для выбора</p>
+                </div>
+                <input type="file" id="fileInput" multiple>
+                <div class="server-info">
+                    <h3>📊 Статус сервера</h3>
+                    <p><span class="status-badge">✓ Онлайн</span></p>
+                    <p>Ваш IP: <span id="clientIp">определяется...</span></p>
+                    <p>Порт: 8888</p>
+                </div>
+            </div>
+
+            <!-- Files List Section -->
+            <div class="section">
+                <h2>Доступные файлы</h2>
+                <div class="file-list" id="fileList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Загрузка файлов...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const clientIpSpan = document.getElementById('clientIp');
+
+        // Get server address
+        const serverAddress = `${window.location.hostname}:${window.location.port || 8888}`;
+
+        // Get server info
+        fetch('/api/server-info')
+            .then(r => r.json())
+            .then(data => {
+                clientIpSpan.textContent = data.local_ip;
+            })
+            .catch(() => {
+                clientIpSpan.textContent = window.location.hostname || 'localhost';
+            });
+
+        // Upload area events
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            for (let file of files) {
+                uploadFile(file);
+            }
+        }
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                const progress = (e.loaded / e.total) * 100;
+                console.log(`Upload progress: ${progress}%`);
+            });
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    showNotification(`✓ Файл "${file.name}" загружен`, 'success');
+                    loadFiles();
+                } else {
+                    showNotification(`✗ Ошибка загрузки "${file.name}"`, 'error');
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                showNotification(`✗ Ошибка при загрузке "${file.name}"`, 'error');
+            });
+
+            xhr.open('POST', '/api/upload');
+            xhr.setRequestHeader('X-Filename', file.name);
+            xhr.send(file);
+        }
+
+        function loadFiles() {
+            fetch('/api/files')
+                .then(r => r.json())
+                .then(files => {
+                    if (files.length === 0) {
+                        fileList.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>Файлов нет</p>
+                                <p style="font-size: 0.9em; margin-top: 5px;">Загрузите первый файл</p>
+                            </div>
+                        `;
+                    } else {
+                        fileList.innerHTML = files.map(file => `
+                            <div class="file-item">
+                                <div class="file-info">
+                                    <div class="file-name">📄 ${escapeHtml(file.name)}</div>
+                                    <div class="file-size">${formatFileSize(file.size)}</div>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="btn btn-download" onclick="downloadFile('${escapeHtml(file.name)}')">
+                                        📥 Скачать
+                                    </button>
+                                    <button class="btn btn-delete" onclick="deleteFile('${escapeHtml(file.name)}')">
+                                        🗑️ Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(() => {
+                    fileList.innerHTML = `
+                        <div class="error-state">
+                            <div>⚠️ Ошибка загрузки файлов</div>
+                            <p style="font-size: 0.9em; margin-top: 10px;">Попробуйте обновить страницу</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function downloadFile(filename) {
+            const a = document.createElement('a');
+            a.href = `/api/download/${encodeURIComponent(filename)}`;
+            a.download = filename;
+            a.click();
+            showNotification(`📥 Загрузка "${filename}"`, 'info');
+        }
+
+        function deleteFile(filename) {
+            if (confirm(`Вы уверены, что хотите удалить "${filename}"?`)) {
+                fetch(`/api/delete/${encodeURIComponent(filename)}`, {
+                    method: 'DELETE'
+                })
+                .then(r => r.json())
+                .then(() => {
+                    showNotification(`✓ Файл "${filename}" удален`, 'success');
+                    loadFiles();
+                })
+                .catch(() => {
+                    showNotification(`✗ Ошибка при удалении файла`, 'error');
+                });
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load files on page load
+        loadFiles();
+
+        // Refresh files every 5 seconds
+        setInterval(loadFiles, 5000);
+    </script>
+</body>
+</html>
